@@ -19,6 +19,7 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.numbers.*;
@@ -30,9 +31,11 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.util.sendable.Sendable;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import frc.robot.Robot;
 import frc.robot.Information.VisionSubsystem.EstimateConsumer;
 
 public class PhotonSubsystem extends SubsystemBase {
@@ -45,7 +48,6 @@ public class PhotonSubsystem extends SubsystemBase {
   PhotonCamera tagCamera;
   public static final AprilTagFieldLayout kTagLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
 
-  // TODO change x component of translation3d to reflect camera position on the robot
   public static final Transform3d kRobotToCam = new Transform3d(new Translation3d(0.08, 0, 0),
       new Rotation3d(0, Math.PI / 6, 0));
 
@@ -61,6 +63,11 @@ public class PhotonSubsystem extends SubsystemBase {
 
   // Does not output, updates curStdDevs to account for vision innaccuracy.
   // may be stuck at zero causing infinite insignificance, printing output
+  // Small Values (e.g., 0.1) "The camera is extremely accurate right now." The
+  // robot "teleports" to the camera's pose, ignoring wheel slip.
+  // Large Values (e.g., 10.0) "The camera is probably lying or noisy." The robot
+  // trusts its wheels and gyro more, barely moving the map icon.
+  // "BigNumber" "I am blind/confused." The vision data is effectively discarded.
   private void updateStdDevs(Optional<EstimatedRobotPose> estimates, List<PhotonTrackedTarget> targets) {
     if (estimates.isEmpty()) {
       curStdDevs = Constants.SingleTagStdDevs;
@@ -120,20 +127,27 @@ public class PhotonSubsystem extends SubsystemBase {
     // updateStdDevs(poseEstimatorPose, res.getTargets());
     List<PhotonPipelineResult> results = tagCamera.getAllUnreadResults();
     if (results.isEmpty()) {
+      // TODO early return
       return;
     }
-    PhotonPipelineResult res = results.get(results.size() - 1);
-    if (res.getTargets().size() > 0) {
+    PhotonPipelineResult res;
+    if (results.size() > 0) {
+      res = results.get((results.size() - 1));
+    }
+    else {
+      // TODO early return
       return;
     }
-    poseEstimatorPose = m_photonEstimator.estimateLowestAmbiguityPose(res);
+    if (res.getTargets().size() == 0) {
+      System.out.print("");
+    }
+    poseEstimatorPose = m_photonEstimator.estimatePnpDistanceTrigSolvePose(res);
 
-    // System.out.println("Camera connected: " + tagCamera.isConnected());
-    // System.out.println("Targets: " + res.getTargets().size());
-    // if (poseEstimatorPose.isPresent()) {
-    //   System.out.println("Vision pose: " +
-    //       poseEstimatorPose.get().estimatedPose.toPose2d());
-    // }
+    System.err.println("Targets: " + res.getTargets().size() + "; Cam Connected: " + tagCamera.isConnected());
+    if (poseEstimatorPose.isPresent()) {
+      System.err.println("Vision pose: " +
+          poseEstimatorPose.get().estimatedPose.toPose2d());
+    }
 
     if (poseEstimatorPose.isPresent()) {
       lastGoodPose = poseEstimatorPose.get();
@@ -147,7 +161,7 @@ public class PhotonSubsystem extends SubsystemBase {
   // returns standard deviations as a matrix, passed to addVisionMeasurements to
   // account for vision innaccuracies
   public Matrix<N3, N1> getStdDevs() {
-    System.out.println(curStdDevs);
+    SmartDashboard.putString("curStdDevs", new String(curStdDevs.toString()));
     return curStdDevs;
   }
 
