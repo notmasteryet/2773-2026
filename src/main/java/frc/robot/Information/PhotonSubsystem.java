@@ -130,31 +130,39 @@ public class PhotonSubsystem extends SubsystemBase {
       // TODO early return
       return;
     }
-    PhotonPipelineResult res;
+    PhotonPipelineResult lastUnreadResult;
     if (results.size() > 0) {
-      res = results.get((results.size() - 1));
-    }
-    else {
+      lastUnreadResult = results.get((results.size() - 1));
+    } else {
       // TODO early return
       return;
     }
-    if (res.getTargets().size() == 0) {
-      System.out.print("");
+    assert lastUnreadResult != null;
+    if (lastUnreadResult.getTargets().size() == 0) {
+      // TODO early return
+      return;
     }
-    poseEstimatorPose = m_photonEstimator.estimatePnpDistanceTrigSolvePose(res);
 
-    System.err.println("Targets: " + res.getTargets().size() + "; Cam Connected: " + tagCamera.isConnected());
-    if (poseEstimatorPose.isPresent()) {
-      System.err.println("Vision pose: " +
-          poseEstimatorPose.get().estimatedPose.toPose2d());
-    }
+    poseEstimatorPose = m_photonEstimator.estimateLowestAmbiguityPose(lastUnreadResult);
+
+    // if (lastUnreadResult.hasTargets()) {
+    //   PhotonTrackedTarget target = lastUnreadResult.getBestTarget();
+    //   System.err.println(String.format(
+    //       "ID: %d | Yaw: %.2f° | Pitch: %.2f° | Area: %.2f%%",
+    //       target.getFiducialId(), // Only for AprilTags; returns -1 for reflective tape
+    //       target.getYaw(),
+    //       target.getPitch(),
+    //       target.getArea()));
+    // } else {
+    //   System.err.println("No targets detected.");
+    // }
 
     if (poseEstimatorPose.isPresent()) {
       lastGoodPose = poseEstimatorPose.get();
       lastTimestamp = lastGoodPose.timestampSeconds;
     }
 
-    updateStdDevs(poseEstimatorPose, res.getTargets());
+    updateStdDevs(poseEstimatorPose, lastUnreadResult.getTargets());
 
   }
 
@@ -167,9 +175,9 @@ public class PhotonSubsystem extends SubsystemBase {
 
   // returns pose estimate as a pose2d s
   public Pose2d getPose2d() {
-    return lastGoodPose == null
-        ? null
-        : lastGoodPose.estimatedPose.toPose2d();
+    var _pose = lastGoodPose.estimatedPose.toPose2d();
+    System.err.println("" + _pose);
+    return _pose;
   }
 
   public double getPhotonTimestamp() {

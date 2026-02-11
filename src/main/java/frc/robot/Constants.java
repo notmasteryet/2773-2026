@@ -9,6 +9,7 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.numbers.*;
 
@@ -56,8 +57,13 @@ public class Constants {
   public static final Transform3d RobotToCam = new Transform3d(new Translation3d(0.14, 0, 0),
       new Rotation3d(0, Math.PI / 6, 0));
   public static final AprilTagFieldLayout TagLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
-  public static final Matrix<N3, N1> SingleTagStdDevs = VecBuilder.fill(4, 4, 8);
+  public static final Matrix<N3, N1> SingleTagStdDevs = VecBuilder.fill(0.1, 0.1, Math.toRadians(10));
   public static final double BigNumber = 9999;
   public static final Vector<N3> MinVisionStdDevs = VecBuilder.fill(0.25, 0.25, Math.toRadians(10));
+  public static final double TimeAllowance = 3.0;
+  public static final Translation2d kfrontLeftLocation = new Translation2d(0.283, 0.281);
+  public static final Translation2d kfrontRightLocation = new Translation2d(0.283, -0.281);
+  public static final Translation2d kbackLeftLocation = new Translation2d(-0.283, 0.281);
+  public static final Translation2d kbackRightLocation = new Translation2d(-0.283, -0.281);
 
 }

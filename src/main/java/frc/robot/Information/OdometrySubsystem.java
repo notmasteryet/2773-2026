@@ -10,6 +10,7 @@ import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.studica.frc.AHRS;
 import com.studica.frc.AHRS.NavXComType;
 
+import frc.robot.Constants;
 import frc.robot.Information.PhotonSubsystem;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -101,7 +102,7 @@ public class OdometrySubsystem extends SubsystemBase {
                 driveSub.getPositions());
 
         Pose2d photonPose = photonSub.getPose2d();
-        if (photonPose != null && Timer.getFPGATimestamp() - photonSub.getPhotonTimestamp() < 3) {
+        if (photonPose != null && Timer.getFPGATimestamp() - photonSub.getPhotonTimestamp() < Constants.TimeAllowance) {
             m_poseEstimator.addVisionMeasurement(
                     photonPose,
                     photonSub.getPhotonTimestamp(),
