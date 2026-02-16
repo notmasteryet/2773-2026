@@ -11,9 +11,11 @@ import org.photonvision.PhotonPoseEstimator;
 import com.studica.frc.AHRS;
 import com.studica.frc.AHRS.NavXComType;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -35,31 +37,61 @@ public class TheMissileKnows extends SubsystemBase {
     this.drive = drive;
     this.camera = new PhotonCamera(Constants.CameraName);
     this.photonEstimator = new PhotonPoseEstimator(
-        Constants.TagLayout, 
+        Constants.TagLayout,
         Constants.RobotToCam);
     this.kinematics = new SwerveDriveKinematics(
-        Constants.kfrontLeftLocation, 
-        Constants.kfrontRightLocation, 
-        Constants.kbackLeftLocation, 
+        Constants.kfrontLeftLocation,
+        Constants.kfrontRightLocation,
+        Constants.kbackLeftLocation,
         Constants.kbackRightLocation);
     this.gyro = new AHRS(NavXComType.kMXP_SPI);
 
     this.poseEstimator = new SwerveDrivePoseEstimator(
-        kinematics, 
-        gyro.getRotation2d(), 
-        drive.getPositions(), 
+        kinematics,
+        gyro.getRotation2d(),
+        drive.getPositions(),
         new Pose2d());
+  }
+
+  public boolean isWithinTolerance(double current, double target, double tolerance) {
+      return Math.abs(current - target) <= tolerance;
+  }
+
+  public Pose2d getPose() {
+    return poseEstimator.getEstimatedPosition();
+  }
+
+  public Rotation2d getRotation2dUnbound() {
+    return gyro.getRotation2d();
+  }
+
+  public Rotation2d getRotation2dBounded() {
+    return Rotation2d.fromDegrees(MathUtil.inputModulus(gyro.getAngle(), -180, 180));
+  }
+
+  public double getRadians() {
+    return getRotation2dUnbound().getRadians();
+  }
+
+  public double getDegrees() {
+    return getRotation2dUnbound().getDegrees();
   }
 
   private Matrix<N3, N1> calculateStdDevs(EstimatedRobotPose estimate) {
     // start with confident estimate
-    var stdDevs = Constants.SingleTagStdDevs;
+    Matrix<N3, N1> stdDevs = Constants.SingleTagStdDevs;
+    if (estimate.targetsUsed.isEmpty())
+      return stdDevs.times(Constants.BigNumber);
 
     // get first target
     var target = estimate.targetsUsed.get(0);
 
     // calculate 3d distance to tag
     double distance = target.getBestCameraToTarget().getTranslation().getNorm();
+    if (target.getPoseAmbiguity() > Constants.AmbiguityTrustWall)
+      stdDevs = stdDevs.times(Constants.MediumNumber);
+    stdDevs = stdDevs.times(Math.pow(MathUtil.clamp(distance, 0.1, 10), 2) * Constants.TrustCoefficient);
+    return stdDevs;
   }
 
   private void masterUpdate() {
@@ -78,9 +110,9 @@ public class TheMissileKnows extends SubsystemBase {
         if (ambiguity < 0.2 && est.timestampSeconds > lastVisionTimestamp) {
           lastVisionTimestamp = est.timestampSeconds;
           poseEstimator.addVisionMeasurement(
-            est.estimatedPose.toPose2d(),
-            est.timestampSeconds,
-            calculateStdDevs(est));
+              est.estimatedPose.toPose2d(),
+              est.timestampSeconds,
+              calculateStdDevs(est));
         }
       }
     }
@@ -91,3 +123,5 @@ public class TheMissileKnows extends SubsystemBase {
     masterUpdate();
   }
 }
+// https://youtu.be/bZe5J8SVCYQ?si=XoSJxxx8E0qfOTof
+// remix song version https://www.youtube.com/watch?v=_LjN3UclYzU

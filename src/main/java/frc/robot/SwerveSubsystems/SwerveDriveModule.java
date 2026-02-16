@@ -93,6 +93,31 @@ public class SwerveDriveModule {
     driveMotor.set(speed * direction);
   }
 
+  public void setDesiredState(SwerveModuleState desiredState) {
+    // 1. Optimize the state to prevent spinning more than 90 degrees.
+    // This makes sure that if the wheel needs to go to 180°, it just 
+    // stays at 0° and reverses the drive motor instead.
+    SwerveModuleState optimizedState = SwerveModuleState.optimize(
+        desiredState, 
+        Rotation2d.fromRadians(canCoderPositionAdjusted())
+    );
+
+    // 2. Calculate the rotation output using your PID controller.
+    // MathUtil.angleModulus ensures we take the shortest path (no 360-degree spins).
+    double rotationError = MathUtil.angleModulus(
+        optimizedState.angle.getRadians() - canCoderPositionAdjusted()
+    );
+
+    double rotationOutput = pidRotate.calculate(rotationError, 0);
+    rotationOutput = MathUtil.clamp(rotationOutput, -ROTATION_LIMIT_SPEED, ROTATION_LIMIT_SPEED);
+    rotateMotor.set(rotationOutput);
+
+    // 3. Set the drive motor speed.
+    // Convert m/s from the state to a percentage (-1.0 to 1.0) for the SparkMax.
+    double driveOutput = optimizedState.speedMetersPerSecond / Constants.MaxDriveSpeed;
+    driveMotor.set(driveOutput);
+  }
+
   public double canCoderPositionAdjusted() {
     // position [-0.5..0.5)
     double value = encoder.getAbsolutePosition().getValueAsDouble() - alpha;

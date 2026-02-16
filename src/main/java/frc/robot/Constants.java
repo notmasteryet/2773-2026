@@ -11,8 +11,8 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.numbers.*;
-
 
 public class Constants {
   public static final int kDriverControllerPort = 0;
@@ -51,6 +51,15 @@ public class Constants {
   public static final double ControllerDeadzone = 0.07;
   public static final double HOTASDeadzone = 0.1;
   public static final double HOTASRotationDeadzone = 0.3;
+  public static final Translation2d kfrontLeftLocation = new Translation2d(0.283, 0.281);
+  public static final Translation2d kfrontRightLocation = new Translation2d(0.283, -0.281);
+  public static final Translation2d kbackLeftLocation = new Translation2d(-0.283, 0.281);
+  public static final Translation2d kbackRightLocation = new Translation2d(-0.283, -0.281);
+  public static final SwerveDriveKinematics kinematics = new SwerveDriveKinematics(
+      kfrontLeftLocation,
+      kfrontRightLocation,
+      kbackLeftLocation,
+      kbackRightLocation);
 
   // Vision
   public static final String CameraName = "AprilCam";
@@ -59,11 +68,9 @@ public class Constants {
   public static final AprilTagFieldLayout TagLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
   public static final Matrix<N3, N1> SingleTagStdDevs = VecBuilder.fill(0.1, 0.1, Math.toRadians(10));
   public static final double BigNumber = 9999;
+  public static final double MediumNumber = 9;
   public static final Vector<N3> MinVisionStdDevs = VecBuilder.fill(0.25, 0.25, Math.toRadians(10));
   public static final double TimeAllowance = 3.0;
-  public static final Translation2d kfrontLeftLocation = new Translation2d(0.283, 0.281);
-  public static final Translation2d kfrontRightLocation = new Translation2d(0.283, -0.281);
-  public static final Translation2d kbackLeftLocation = new Translation2d(-0.283, 0.281);
-  public static final Translation2d kbackRightLocation = new Translation2d(-0.283, -0.281);
-
+  public static final double TrustCoefficient = 0.3;
+  public static final double AmbiguityTrustWall = 0.3;
 }
