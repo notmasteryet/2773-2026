@@ -175,6 +175,9 @@ public class PhotonSubsystem extends SubsystemBase {
 
   // returns pose estimate as a pose2d s
   public Pose2d getPose2d() {
+    if (lastGoodPose == null) {
+      return null;
+    }
     var _pose = lastGoodPose.estimatedPose.toPose2d();
     System.err.println("" + _pose);
     return _pose;

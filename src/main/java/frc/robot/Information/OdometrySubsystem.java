@@ -55,12 +55,12 @@ public class OdometrySubsystem extends SubsystemBase {
     SwerveDriveModule[] modules;
     Pose2d pose = new Pose2d();
     Field2d field = new Field2d();
-    PhotonSubsystem photonSub;
+    // PhotonSubsystem photonSub;
 
     public OdometrySubsystem(DriveSubsystem driveSub, PhotonSubsystem photonSub) {
         gyro.reset();
         this.driveSub = driveSub;
-        this.photonSub = photonSub;
+        // this.photonSub = photonSub;
         modules = driveSub.modules;
         m_odometry = new SwerveDriveOdometry(
                 m_kinematics, gyro.getRotation2d(),
@@ -101,13 +101,13 @@ public class OdometrySubsystem extends SubsystemBase {
                 gyroAngle.times(-1),
                 driveSub.getPositions());
 
-        Pose2d photonPose = photonSub.getPose2d();
-        if (photonPose != null && Timer.getFPGATimestamp() - photonSub.getPhotonTimestamp() < Constants.TimeAllowance) {
-            m_poseEstimator.addVisionMeasurement(
-                    photonPose,
-                    photonSub.getPhotonTimestamp(),
-                    photonSub.getStdDevs());
-        }
+        // Pose2d photonPose = photonSub.getPose2d();
+        // if (photonPose != null && Timer.getFPGATimestamp() - photonSub.getPhotonTimestamp() < Constants.TimeAllowance) {
+        //     m_poseEstimator.addVisionMeasurement(
+        //             photonPose,
+        //             photonSub.getPhotonTimestamp(),
+        //             photonSub.getStdDevs());
+        // }
 
         pose = m_poseEstimator.getEstimatedPosition();
 
