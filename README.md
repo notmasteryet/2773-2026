@@ -1,5 +1,5 @@
 README
-This is the 2025 repo for the FIRST Robotics Team 2773, IronDogz!
+This is the 2026 repo for the FIRST Robotics Team 2773, IronDogz!
 
 Naming Conventions
 When naming a commit, be clear to mention if it is unstable or untested in capital letters, like "UNSTABLE Drive Slowmode Added"
