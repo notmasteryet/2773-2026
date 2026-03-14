@@ -88,7 +88,7 @@ public class OdometrySubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         Rotation2d gyroAngle = new Rotation2d(gyro.getAngle() * Math.PI / 180);
-        
+
         m_poseEstimator.updateWithTime(
                 Timer.getFPGATimestamp(),
                 gyroAngle.times(-1),
@@ -160,6 +160,11 @@ public class OdometrySubsystem extends SubsystemBase {
 
     public void resetGyro() {
         gyro.reset();
+        m_poseEstimator.resetPosition(
+            gyro.getRotation2d().times(-1),
+            driveSub.getPositions(),
+            pose
+        );
     }
 
     public double[] getSwerveAngles() {
