@@ -20,6 +20,8 @@ import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.system.plant.DCMotor;
 
 public class DriveSubsystem extends SubsystemBase {
   public SwerveDriveModule blMotor = new SwerveDriveModule(Constants.backLeftModuleDriveCANID,
@@ -208,22 +210,22 @@ public class DriveSubsystem extends SubsystemBase {
   }
 
   /**
-   * Get current chassis speeds from module states
+   * Get current robot-relative chassis speeds from module states
    */
-  public ChassisSpeeds getChassisSpeeds() {
+  public ChassisSpeeds getRobotRelativeSpeeds() {
     return kinematics.toChassisSpeeds(getStates());
   }
 
   /**
-   * Drive using ChassisSpeeds (required for PathPlanner)
+   * Drive using robot-relative ChassisSpeeds (required for PathPlanner)
    */
-  public void chassisDriveFieldRelative(ChassisSpeeds chassisSpeeds) {
+  public void driveRobotRelative(ChassisSpeeds robotRelativeSpeeds) {
     // Convert ChassisSpeeds to SwerveModuleStates
-    SwerveModuleState[] states = kinematics.toSwerveModuleStates(chassisSpeeds);
-    
+    SwerveModuleState[] states = kinematics.toSwerveModuleStates(robotRelativeSpeeds);
+
     // Desaturate wheel speeds to stay within limits
     SwerveDriveKinematics.desaturateWheelSpeeds(states, Constants.MaxDriveSpeed);
-    
+
     // Set each module to its target state
     flMotor.setDesiredState(states[0]);
     frMotor.setDesiredState(states[1]);
@@ -236,30 +238,42 @@ public class DriveSubsystem extends SubsystemBase {
    * Call this after OdometrySubsystem is created
    */
   public void initAutoBuilder(OdometrySubsystem odomSub) {
-    try {
-      // Load robot config from pathplanner/settings.json
-      RobotConfig config = RobotConfig.fromGUISettings();
-      
-      // Configure AutoBuilder
-      AutoBuilder.configure(
-        odomSub::getPose,                    // Pose supplier
-        odomSub::resetPose,                  // Pose consumer (reset odometry)
-        this::getChassisSpeeds,              // ChassisSpeeds supplier
-        this::chassisDriveFieldRelative,     // ChassisSpeeds consumer
-        new PPHolonomicDriveController(
-          new PIDConstants(5.0, 0.0, 0.0),   // Translation PID
-          new PIDConstants(5.0, 0.0, 0.0)    // Rotation PID
-        ),
-        config,
-        () -> {
-          // Flip paths for red alliance
-          var alliance = DriverStation.getAlliance();
-          return alliance.isPresent() ? alliance.get() == DriverStation.Alliance.Red : false;
-        },
-        this                                   // Reference to this subsystem
-      );
-    } catch (Exception e) {
-      DriverStation.reportError("Failed to configure AutoBuilder: " + e.getMessage(), true);
-    }
+    // Create RobotConfig inline (more reliable than fromGUISettings)
+    // PathPlannerLib 2026 API - module locations in FL, FR, BL, BR order
+    RobotConfig config = new RobotConfig(
+      50.0,           // Mass: 50 kg
+      6.0,            // MOI: 6.0 kg·m²
+      new com.pathplanner.lib.config.ModuleConfig(
+        0.0508,       // Wheel radius: 0.0508m (from 0.1016m diameter)
+        3.0,          // Max speed: 3.0 m/s
+        1.2,          // Wheel COF: 1.2
+        DCMotor.getNEO(1),  // Motor: 1 NEO per module
+        6.75,         // Drive gearing: 6.75
+        40            // Current limit: 40A
+      ),
+      new Translation2d(0.283, 0.281),    // Front Left
+      new Translation2d(0.283, -0.281),   // Front Right
+      new Translation2d(-0.283, 0.281),   // Back Left
+      new Translation2d(-0.283, -0.281)   // Back Right
+    );
+
+    // Configure AutoBuilder
+    AutoBuilder.configure(
+      odomSub::getPose,                    // Pose supplier
+      odomSub::resetPose,                  // Pose consumer (reset odometry)
+      this::getRobotRelativeSpeeds,        // Robot-relative ChassisSpeeds supplier
+      (speeds, feedforwards) -> driveRobotRelative(speeds),  // Robot-relative drive consumer
+      new PPHolonomicDriveController(
+        new PIDConstants(5.0, 0.0, 0.0),   // Translation PID
+        new PIDConstants(5.0, 0.0, 0.0)    // Rotation PID
+      ),
+      config,
+      () -> {
+        // Flip paths for red alliance
+        var alliance = DriverStation.getAlliance();
+        return alliance.isPresent() ? alliance.get() == DriverStation.Alliance.Red : false;
+      },
+      this                                   // Reference to this subsystem
+    );
   }
 }
