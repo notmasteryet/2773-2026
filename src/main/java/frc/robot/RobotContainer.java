@@ -5,6 +5,7 @@
 package frc.robot;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.path.PathPlannerPath;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.numbers.N1;
@@ -42,7 +43,26 @@ public class RobotContainer {
     driveSub.initAutoBuilder(odomSub);
 
     System.out.println("RobotContainer: Building auto chooser...");
+    
+    // Build auto chooser and manually add paths
     autoChooser = AutoBuilder.buildAutoChooser();
+    
+    // Try to load paths manually
+    try {
+      PathPlannerPath examplePath = PathPlannerPath.fromPathFile("Example Path");
+      autoChooser.addOption("Example Path", AutoBuilder.followPath(examplePath));
+      System.out.println("RobotContainer: Added 'Example Path' to chooser");
+    } catch (Exception e) {
+      System.err.println("Failed to load 'Example Path': " + e.getMessage());
+    }
+    
+    try {
+      PathPlannerPath newPath = PathPlannerPath.fromPathFile("New Path");
+      autoChooser.addOption("New Path", AutoBuilder.followPath(newPath));
+      System.out.println("RobotContainer: Added 'New Path' to chooser");
+    } catch (Exception e) {
+      System.err.println("Failed to load 'New Path': " + e.getMessage());
+    }
     
     if (autoChooser == null) {
       System.err.println("ERROR: AutoBuilder.buildAutoChooser() returned null!");
