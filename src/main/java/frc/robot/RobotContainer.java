@@ -36,11 +36,16 @@ public class RobotContainer {
   // JoystickDriveCommand jdriveCommand = new JoystickDriveCommand(driveSub, joystick, odomSub);
 
   public RobotContainer() {
+    System.out.println("RobotContainer: Initializing AutoBuilder...");
+    
     // Initialize AutoBuilder after subsystems are created
     driveSub.initAutoBuilder(odomSub);
+    
+    System.out.println("RobotContainer: Building auto chooser...");
     autoChooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData("Auto Chooser", autoChooser);
-    
+    System.out.println("RobotContainer: Auto chooser created!");
+
     // Command scheduler
     driveSub.setDefaultCommand(driveCommand);
   }

@@ -238,42 +238,51 @@ public class DriveSubsystem extends SubsystemBase {
    * Call this after OdometrySubsystem is created
    */
   public void initAutoBuilder(OdometrySubsystem odomSub) {
-    // Create RobotConfig inline (more reliable than fromGUISettings)
-    // PathPlannerLib 2026 API - module locations in FL, FR, BL, BR order
-    RobotConfig config = new RobotConfig(
-      50.0,           // Mass: 50 kg
-      6.0,            // MOI: 6.0 kg·m²
-      new com.pathplanner.lib.config.ModuleConfig(
-        0.0508,       // Wheel radius: 0.0508m (from 0.1016m diameter)
-        3.0,          // Max speed: 3.0 m/s
-        1.2,          // Wheel COF: 1.2
-        DCMotor.getNEO(1),  // Motor: 1 NEO per module
-        6.75,         // Drive gearing: 6.75
-        40            // Current limit: 40A
-      ),
-      new Translation2d(0.283, 0.281),    // Front Left
-      new Translation2d(0.283, -0.281),   // Front Right
-      new Translation2d(-0.283, 0.281),   // Back Left
-      new Translation2d(-0.283, -0.281)   // Back Right
-    );
+    try {
+      // Create RobotConfig inline (more reliable than fromGUISettings)
+      // PathPlannerLib 2026 API - module locations in FL, FR, BL, BR order
+      RobotConfig config = new RobotConfig(
+        50.0,           // Mass: 50 kg
+        6.0,            // MOI: 6.0 kg·m²
+        new com.pathplanner.lib.config.ModuleConfig(
+          0.0508,       // Wheel radius: 0.0508m (from 0.1016m diameter)
+          3.0,          // Max speed: 3.0 m/s
+          1.2,          // Wheel COF: 1.2
+          DCMotor.getNEO(1),  // Motor: 1 NEO per module
+          6.75,         // Drive gearing: 6.75
+          40            // Current limit: 40A
+        ),
+        new Translation2d(0.283, 0.281),    // Front Left
+        new Translation2d(0.283, -0.281),   // Front Right
+        new Translation2d(-0.283, 0.281),   // Back Left
+        new Translation2d(-0.283, -0.281)   // Back Right
+      );
 
-    // Configure AutoBuilder
-    AutoBuilder.configure(
-      odomSub::getPose,                    // Pose supplier
-      odomSub::resetPose,                  // Pose consumer (reset odometry)
-      this::getRobotRelativeSpeeds,        // Robot-relative ChassisSpeeds supplier
-      (speeds, feedforwards) -> driveRobotRelative(speeds),  // Robot-relative drive consumer
-      new PPHolonomicDriveController(
-        new PIDConstants(5.0, 0.0, 0.0),   // Translation PID
-        new PIDConstants(5.0, 0.0, 0.0)    // Rotation PID
-      ),
-      config,
-      () -> {
-        // Flip paths for red alliance
-        var alliance = DriverStation.getAlliance();
-        return alliance.isPresent() ? alliance.get() == DriverStation.Alliance.Red : false;
-      },
-      this                                   // Reference to this subsystem
-    );
+      // Configure AutoBuilder
+      AutoBuilder.configure(
+        odomSub::getPose,                    // Pose supplier
+        odomSub::resetPose,                  // Pose consumer (reset odometry)
+        this::getRobotRelativeSpeeds,        // Robot-relative ChassisSpeeds supplier
+        (speeds, feedforwards) -> driveRobotRelative(speeds),  // Robot-relative drive consumer
+        new PPHolonomicDriveController(
+          new PIDConstants(5.0, 0.0, 0.0),   // Translation PID
+          new PIDConstants(5.0, 0.0, 0.0)    // Rotation PID
+        ),
+        config,
+        () -> {
+          // Flip paths for red alliance
+          var alliance = DriverStation.getAlliance();
+          return alliance.isPresent() ? alliance.get() == DriverStation.Alliance.Red : false;
+        },
+        this                                   // Reference to this subsystem
+      );
+      
+      System.out.println("AutoBuilder configured successfully!");
+    } catch (Exception e) {
+      String errorMsg = "AutoBuilder init failed: " + e.getMessage();
+      DriverStation.reportError(errorMsg, true);
+      System.err.println(errorMsg);
+      e.printStackTrace();
+    }
   }
 }
