@@ -8,8 +8,6 @@ import com.ctre.phoenix6.unmanaged.Unmanaged;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.Information.TagSubsystem;
@@ -20,8 +18,6 @@ import frc.robot.Information.TagSubsystem;
  * this project, you must also update the Main.java file in the project.
  */
 public class Robot extends TimedRobot {
-  private String m_autoSelected;
-  private final SendableChooser<String> m_chooser = new SendableChooser<>();
   private Command m_autonomousCommand;
 
   private final RobotContainer m_robotContainer;
@@ -34,13 +30,6 @@ public class Robot extends TimedRobot {
     Unmanaged.setPhoenixDiagnosticsStartTime(-1);
     // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
     // autonomous chooser on the dashboard.
-    m_chooser.setDefaultOption("Auto 1", "Auto 1");
-    m_chooser.addOption("Auto 2", "Auto 2");
-    m_chooser.addOption("Auto 3", "Auto 3");
-    m_chooser.addOption("Auto 4", "Auto 4");
-    m_chooser.addOption("Auto 5", "Auto 5");
-    m_chooser.addOption("Auto 6", "Auto 6");
-    SmartDashboard.putData("Auto choices", m_chooser);
     m_robotContainer = new RobotContainer();
     DataLogManager.start();
   }
@@ -71,15 +60,11 @@ public class Robot extends TimedRobot {
   /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
   @Override
   public void autonomousInit() {
-    
-    m_autoSelected = m_chooser.getSelected();
-    System.out.println("Auto chosen: " + m_autoSelected);
-    // schedule the autonomous command (example)
+    // Get the autonomous command from RobotContainer's chooser
+    m_autonomousCommand = m_robotContainer.getAutonomousCommand();
     if (m_autonomousCommand != null) {
       m_autonomousCommand.schedule();
     }
-    // m_robotContainer.returnClimber().setSpeed(0.05);
-    
   }
 
   /** This function is called periodically during autonomous. */

@@ -4,22 +4,24 @@
 
 package frc.robot;
 
+import com.pathplanner.lib.auto.AutoBuilder;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.SwerveSubsystems.*;
 import frc.robot.Commands.*;
 import frc.robot.Information.*;
 
 public class RobotContainer {
-  public RobotContainer() {
+  // Autonomous chooser
+  private final SendableChooser<Command> autoChooser;
 
-  }
-
-  // Base inits
   // Controllers
   XboxController xbox = new XboxController(0);
   Joystick joystick = new Joystick(1);
@@ -33,16 +35,21 @@ public class RobotContainer {
   XBOXDriveCommand driveCommand = new XBOXDriveCommand(driveSub, xbox, odomSub);
   // JoystickDriveCommand jdriveCommand = new JoystickDriveCommand(driveSub, joystick, odomSub);
 
-  // Command scheduler
-  {
-    driveSub.setDefaultCommand(driveCommand);
+  public RobotContainer() {
+    // Initialize AutoBuilder after subsystems are created
+    driveSub.initAutoBuilder(odomSub);
+    autoChooser = AutoBuilder.buildAutoChooser();
+    SmartDashboard.putData("Auto Chooser", autoChooser);
     
+    // Command scheduler
+    driveSub.setDefaultCommand(driveCommand);
   }
 
   void acceptEstimatedRobotPose(Pose2d pose, double timestamp, Matrix<N3, N1> estimationStdDevs) {
     odomSub.addVisionMeasurement(pose, timestamp, estimationStdDevs);
   }
-  // Autonomous chooser
 
-  // return new DeltaPoseCommand(0, 1.5, 0, driveSub, odomSub);
+  public Command getAutonomousCommand() {
+    return autoChooser.getSelected();
+  }
 }

@@ -3,20 +3,23 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot.SwerveSubsystems;
 
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.Information.OdometrySubsystem;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.geometry.Rotation2d;
 
 public class DriveSubsystem extends SubsystemBase {
   public SwerveDriveModule blMotor = new SwerveDriveModule(Constants.backLeftModuleDriveCANID,
@@ -32,6 +35,9 @@ public class DriveSubsystem extends SubsystemBase {
   public double i = 0;
   public double d = 0;
   public PIDController pid = new PIDController(p, i, d);
+
+  // Swerve kinematics for converting ChassisSpeeds to module states
+  public SwerveDriveKinematics kinematics = Constants.kinematics;
 
   public SwerveModulePosition[] getPositions() {
     return new SwerveModulePosition[] {
@@ -199,5 +205,61 @@ public class DriveSubsystem extends SubsystemBase {
         modules[2].getSwerveState(),
         modules[3].getSwerveState()
     };
+  }
+
+  /**
+   * Get current chassis speeds from module states
+   */
+  public ChassisSpeeds getChassisSpeeds() {
+    return kinematics.toChassisSpeeds(getStates());
+  }
+
+  /**
+   * Drive using ChassisSpeeds (required for PathPlanner)
+   */
+  public void chassisDriveFieldRelative(ChassisSpeeds chassisSpeeds) {
+    // Convert ChassisSpeeds to SwerveModuleStates
+    SwerveModuleState[] states = kinematics.toSwerveModuleStates(chassisSpeeds);
+    
+    // Desaturate wheel speeds to stay within limits
+    SwerveDriveKinematics.desaturateWheelSpeeds(states, Constants.MaxDriveSpeed);
+    
+    // Set each module to its target state
+    flMotor.setDesiredState(states[0]);
+    frMotor.setDesiredState(states[1]);
+    blMotor.setDesiredState(states[2]);
+    brMotor.setDesiredState(states[3]);
+  }
+
+  /**
+   * Initialize AutoBuilder for PathPlanner
+   * Call this after OdometrySubsystem is created
+   */
+  public void initAutoBuilder(OdometrySubsystem odomSub) {
+    try {
+      // Load robot config from pathplanner/settings.json
+      RobotConfig config = RobotConfig.fromGUISettings();
+      
+      // Configure AutoBuilder
+      AutoBuilder.configure(
+        odomSub::getPose,                    // Pose supplier
+        odomSub::resetPose,                  // Pose consumer (reset odometry)
+        this::getChassisSpeeds,              // ChassisSpeeds supplier
+        this::chassisDriveFieldRelative,     // ChassisSpeeds consumer
+        new PPHolonomicDriveController(
+          new PIDConstants(5.0, 0.0, 0.0),   // Translation PID
+          new PIDConstants(5.0, 0.0, 0.0)    // Rotation PID
+        ),
+        config,
+        () -> {
+          // Flip paths for red alliance
+          var alliance = DriverStation.getAlliance();
+          return alliance.isPresent() ? alliance.get() == DriverStation.Alliance.Red : false;
+        },
+        this                                   // Reference to this subsystem
+      );
+    } catch (Exception e) {
+      DriverStation.reportError("Failed to configure AutoBuilder: " + e.getMessage(), true);
+    }
   }
 }
