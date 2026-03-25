@@ -12,13 +12,13 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.SwerveSubsystems.*;
 import frc.robot.Commands.*;
 import frc.robot.Information.*;
-import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 public class RobotContainer {
   // Autonomous chooser
@@ -75,6 +75,10 @@ public class RobotContainer {
 
     // Command scheduler
     driveSub.setDefaultCommand(driveCommand);
+
+    // Left bumper (button 5): drive 1 m in field +X direction at 30% speed while held
+    new JoystickButton(xbox, XboxController.Button.kLeftBumper.value)
+        .whileTrue(new DriveDistanceCommand(driveSub, odomSub, 1.0, 0.0, 0.3));
 
     // A button: run PathPlanner "New Path" while held
     try {
