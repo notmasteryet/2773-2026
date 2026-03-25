@@ -10,6 +10,7 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.SwerveSubsystems.*;
 import frc.robot.Commands.*;
 import frc.robot.Information.*;
@@ -36,7 +37,10 @@ public class RobotContainer {
   // Command scheduler
   {
     driveSub.setDefaultCommand(driveCommand);
-    
+
+    // Left bumper (button 5): drive 1 m in field +X direction at 30% speed while held
+    new JoystickButton(xbox, XboxController.Button.kLeftBumper.value)
+        .whileTrue(new DriveDistanceCommand(driveSub, odomSub, 1.0, 0.0, 0.3));
   }
 
   void acceptEstimatedRobotPose(Pose2d pose, double timestamp, Matrix<N3, N1> estimationStdDevs) {
